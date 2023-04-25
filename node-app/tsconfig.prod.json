@@ -1,0 +1,21 @@
+{
+	"compileOnSave": false,
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+		"moduleResolution": "node",
+		"rootDir": "./src",
+		"outDir": "./dist",
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+		"noUnusedLocals": true,
+		"sourceMap": false,
+		"declaration": false,
+		"strictNullChecks": true,
+		"removeComments": true,
+		"resolveJsonModule": true
+	},
+	"files": ["./typings.d.ts"],
+	"include": ["./src/**/*.ts"],
+	"exclude": ["./node_modules/*", "./src/**/*.sandbox.ts", "./src/**/*.spec.ts"]
+}
