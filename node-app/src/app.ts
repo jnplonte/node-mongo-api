@@ -7,8 +7,7 @@ import { expressCspHeader, SELF, EVAL } from 'express-csp-header';
 
 import * as redisCache from 'express-redis-cache';
 
-import * as authenticationRoutes from './routes/authentication-route';
-import * as coreRoutes from './routes/core-route';
+// import * as authenticationRoutes from './routes/authentication-route';
 
 import { setup } from './models';
 
@@ -33,7 +32,7 @@ express['application']['version'] = express.Router['group'] = function (arg1, ar
 // process.env.TZ = 'Asia/Manila';
 process.env.TZ = 'utc';
 
-const mysql = setup();
+const mongo = setup();
 
 class App {
 	public express;
@@ -113,8 +112,7 @@ class App {
 	}
 
 	private setRoute(): void {
-		this.express = authenticationRoutes.setup(this.express, this.cache, baseConfig, mysql);
-		this.express = coreRoutes.setup(this.express, this.cache, baseConfig, mysql);
+		// this.express = authenticationRoutes.setup(this.express, this.cache, baseConfig, mongo);
 	}
 
 	private setNotFound(): void {

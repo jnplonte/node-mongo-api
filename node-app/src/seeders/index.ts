@@ -7,13 +7,7 @@ import * as mongoose from 'mongoose';
 
 import { baseConfig } from './../config';
 
-const databaseInstance: Array<any> = [];
-
-export function setup() {
-	if (databaseInstance['mongo']) {
-		return databaseInstance['mongo'];
-	}
-
+export function seed() {
 	const basename = path.basename(__filename);
 	const env = process.env.NODE_ENV || 'local';
 	const db = {};
@@ -43,15 +37,35 @@ export function setup() {
 		mongoose.connection.on('error', console.error.bind(console, 'mongo connection error:'));
 	}
 
-	fs.readdirSync(`${__dirname}`)
+	fs.readdirSync(path.resolve('./dist/models'))
 		.filter((file) => file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js')
 		.forEach((file) => {
 			if (file !== 'index.js') {
-				const model = require(path.join(`${__dirname}`, file)).default(mongoose);
+				const model = require(path.join(path.resolve('./dist/models'), file)).default(mongoose);
 				db[model.name] = model.model;
 			}
 		});
 
-	databaseInstance['mongo'] = db;
-	return db;
+	// NOTE: add 3 seconds delay
+	setTimeout(() => {
+		console.log('seeding start');
+
+		fs.readdirSync(__dirname)
+			.filter((file) => file.indexOf('.') !== 0 && file !== basename && file.slice(-3) === '.js')
+			.forEach((file) => {
+				if (file !== 'index.js') {
+					const faker = require(path.join(`${__dirname}`, file)).default(mongoose);
+					db[faker['name']]
+						.insertMany(faker['seed'])
+						.then((data) => {
+							console.log(faker['name'], 'seed success');
+						})
+						.catch((error) => {
+							console.log('seed error', error);
+						});
+				}
+			});
+	}, 3000);
 }
+
+seed();

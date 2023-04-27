@@ -1,6 +1,6 @@
 {
 	"name": "node-mongo-api",
-	"description": "node api",
+	"description": "node mongo api",
 	"version": "1.0.0",
 	"main": "index.js",
 	"private": true,
@@ -19,8 +19,7 @@
 		"start:server": "node ./dist/index.js",
 		"test": "concurrently \"tsc\" \"PORT=8883 TEST_DIR='./dist/doc' ARTIFACTS_DIR='./dist/doc' COVERAGE_DIR='./dist/doc' mocha dist/**/*.spec.js --timeout 100000 --exit\"",
 		"test:one": "concurrently \"tsc\" \"mocha ./dist/app/v1/core/**/*.spec.js --timeout 100000 --no-coverage --exit\"",
-		"migrate": "sequelize db:migrate --env local --config ./src/config/database-config.json --migrations-path ./dist/migrations",
-		"seed": "sequelize db:seed:all --env local --config ./src/config/database-config.json --seeders-path ./dist/seeders",
+		"seed": "node ./dist/seeders/index.js",
 		"lint": "eslint -c ./.eslintrc.js --ext .ts ./src",
 		"lint:fix": "npm run lint -- --fix",
 		"watch": "tsc --watch"
@@ -32,7 +31,6 @@
 		"concurrently": "^8.0.1",
 		"copyfiles": "^2.4.1",
 		"cors": "^2.8.5",
-		"crypto-js": "^4.1.1",
 		"express": "^4.18.2",
 		"express-csp-header": "^5.1.0",
 		"express-jwt": "^8.4.1",
@@ -41,11 +39,8 @@
 		"helmet": "^6.1.5",
 		"jnpl-helper": "^1.5.20",
 		"jwt-simple": "^0.5.6",
-		"mysql2": "^3.2.3",
+		"mongoose": "^7.0.4",
 		"nodemailer": "^6.9.1",
-		"reflect-metadata": "^0.1.13",
-		"sequelize": "^6.31.0",
-		"sequelize-cli": "^6.6.0",
 		"ts-node": "^10.9.1",
 		"typescript": "^5.0.4",
 		"uuid": "^9.0.0"
@@ -57,18 +52,17 @@
 		"@types/helmet": "^4.0.0",
 		"@types/mocha": "^10.0.1",
 		"@types/node": "^18.16.0",
-		"@types/sequelize": "^4.28.14",
 		"@typescript-eslint/eslint-plugin": "^5.59.0",
 		"@typescript-eslint/eslint-plugin-tslint": "^5.59.0",
 		"@typescript-eslint/parser": "^5.59.0",
 		"apidoc": "^0.54.0",
 		"chai": "^4.3.7",
 		"cross-env": "^7.0.3",
+		"eslint": "^8.38.0",
 		"mocha": "^10.2.0",
 		"nock": "^13.3.0",
 		"nodemon": "^2.0.22",
-		"supertest": "^6.3.3",
-		"eslint": "^8.38.0"
+		"supertest": "^6.3.3"
 	},
 	"eslintIgnore": [
 		"*.spec.ts"

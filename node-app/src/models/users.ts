@@ -1,180 +1,151 @@
-import {
-	Sequelize
-} from 'sequelize';
-
-const encodeKeyInformation = (data) => {
-	if (data['phone']) {
-		data['phone'] = Buffer.from(data['phone']).toString('base64');
-	}
-
-	if (data['email']) {
-		data['email'] = Buffer.from(data['email']).toString('base64');
-	}
-
-	return data;
-};
-const decodeKeyInformation = (data) => {
-	if (data['phone']) {
-		data['phone'] = Buffer.from(data['phone'], 'base64').toString('ascii');
-	}
-
-	if (data['email']) {
-		data['email'] = Buffer.from(data['email'], 'base64').toString('ascii');
-	}
-
-	return data;
-};
-
 export interface UsersAttributes {
-	id?: string;
-	createdUserId?: string;
-	createdAt?: Date;
-	updatedUserId?: string;
-	updatedAt?: Date;
+	_id?: string;
 
 	firstName?: string;
 	lastName?: string;
-	email?: string;
+	birthDate?: string;
 	phone?: string;
-	username?: string;
+	email?: string;
 	password?: string;
 	salt?: string;
 	forgotPasswordKey?: string;
 	lastLogin?: Date;
 	loginCount?: number;
-	roleId?: number;
-	languageId?: number;
-	countryId?: number;
-	socialMedia?: string;
-	socialMediaKey?: string;
+
+	roleId?: string;
+	languageId?: string;
+	countryId?: string;
+	cityId?: string;
+	postalName?: string;
+	postalId?: number;
+
+	socialMedia?: object;
+	additionalData?: object;
+
 	active?: boolean;
 	verified?: boolean;
 	verificationKey?: string;
 
 	loginAttempt?: number;
 	passwordExpiry?: Date;
+
+	createdAt?: Date;
+	updatedAt?: Date;
 }
 
-export default function(sequelize: Sequelize, dataTypes: any) {
-	const users = sequelize.define('users', {
-		id: {
-			type: dataTypes.UUID,
-			primaryKey: true,
-			defaultValue: dataTypes.UUIDV4
-		},
-		firstName: dataTypes.STRING,
-		lastName: dataTypes.STRING,
-		email: {
-			type: dataTypes.STRING,
-			unique: true,
-			validate: {
-				notEmpty: true
-			}
-		},
-		phone: dataTypes.STRING,
-		username: {
-			type: dataTypes.STRING,
-			validate: {
-				notEmpty: true
-			}
-		},
-		password: {
-			type: dataTypes.STRING,
-			validate: {
-				notEmpty: true
-			}
-		},
-		salt: dataTypes.STRING,
-		forgotPasswordKey: dataTypes.STRING,
-		lastLogin: dataTypes.DATE,
-		loginCount: dataTypes.INTEGER,
-		roleId: {
-			type: dataTypes.INTEGER,
-			references: {
-				model: 'roles',
-				key: 'id'
-			}
-		},
-		languageId: {
-			type: dataTypes.INTEGER,
-			references: {
-				model: 'languages',
-				key: 'id'
-			}
-		},
-		countryId: {
-			type: dataTypes.INTEGER,
-			references: {
-				model: 'countries',
-				key: 'id'
-			}
-		},
-		socialMedia: {
-			type: dataTypes.ENUM,
-			values: ['NONE', 'FACEBOOK']
-		},
-		socialMediaKey: dataTypes.STRING,
-		active: dataTypes.BOOLEAN,
-
-		verified: dataTypes.BOOLEAN,
-		verificationKey: dataTypes.STRING,
-
-		loginAttempt: dataTypes.TINYINT,
-		passwordExpiry: dataTypes.DATE,
-
-		createdUserId: dataTypes.UUID,
-		updatedUserId: dataTypes.UUID
-	},
-	{
-		hooks: {
-			beforeBulkCreate: (data: any) => {
-				if (data) {
-					data = encodeKeyInformation(data);
-				}
+export default function userModel(mongoose) {
+	const userSchema = mongoose.Schema(
+		{
+			firstName: {
+				type: String,
+				required: true,
 			},
-			beforeCreate: (data: any) => {
-				if (data) {
-					data = encodeKeyInformation(data);
-				}
+			lastName: {
+				type: String,
+				required: true,
 			},
-			beforeBulkUpdate: (data: any) => {
-				if (data && typeof(data['attributes']) !== 'undefined') {
-					data['attributes'] = encodeKeyInformation(data['attributes']);
-				}
+			birthDate: {
+				type: String,
 			},
-			beforeUpdate: (data: any) => {
-				if (data && typeof(data['attributes']) !== 'undefined') {
-					data['attributes'] = encodeKeyInformation(data['attributes']);
-				}
+			phone: {
+				type: String,
+				required: true,
 			},
-			afterFind: (data: any) => {
-				if (data) {
-					if (data.constructor.name === 'Array') {
-						data = data.map( (dataval) => {
-							dataval = decodeKeyInformation(dataval);
-							return dataval;
-						});
-					} else {
-						data = decodeKeyInformation(data);
-					}
-				}
-			}
-		}
-	});
+			email: {
+				type: String,
+			},
 
-	users['associate'] = (models) => {
-		models.users.belongsTo(models.roles, {
-			foreignKey: 'roleId'
-		});
+			password: {
+				type: String,
+			},
+			salt: {
+				type: String,
+			},
+			forgotPasswordKey: {
+				type: String,
+			},
 
-		models.users.belongsTo(models.languages, {
-			foreignKey: 'languageId'
-		});
+			lastLogin: {
+				type: Date,
+				default: new Date(),
+			},
+			loginCount: {
+				type: Number,
+				default: 0,
+			},
 
-		models.users.belongsTo(models.countries, {
-			foreignKey: 'countryId'
-		});
+			roleId: {
+				type: String,
+				enum: ['ADMIN', 'USER', 'CUSTOMERADMIN', 'CUSTOMERUSER'],
+				default: 'USER',
+			},
+			languageId: {
+				type: String,
+				enum: ['ENGLISH', 'TAGALOG'],
+				default: 'ENGLISH',
+			},
+			countryId: {
+				type: String,
+				enum: ['NONE', 'PHILIPPINES'],
+				default: 'NONE',
+			},
+			cityId: {
+				type: String,
+				enum: ['NONE', 'QUEZONCITY', 'MANDALUYONGCITY', 'PASIGCITY'],
+				default: 'NONE',
+			},
+			postalName: {
+				type: String,
+			},
+			postalId: {
+				type: Number,
+			},
+
+			socialMedia: {
+				type: Object,
+			},
+			additionalData: {
+				type: Object,
+			},
+
+			active: {
+				type: Boolean,
+				default: false,
+			},
+			verified: {
+				type: Boolean,
+				default: false,
+			},
+			verificationKey: {
+				type: String,
+			},
+
+			loginAttempt: {
+				type: Number,
+				default: 0,
+			},
+			passwordExpiry: {
+				type: Date,
+				default: new Date(),
+			},
+
+			createdAt: {
+				type: Date,
+				default: new Date(),
+			},
+			updatedAt: {
+				type: Date,
+				default: new Date(),
+			},
+		},
+		{ collation: { locale: 'en', strength: 2 } }
+	);
+
+	userSchema.index({ phone: 1, roleId: 1, cityId: 1, postalId: 1, createdAt: -1 });
+	userSchema.index({ phone: 1 }, { unique: true });
+
+	return {
+		name: 'users',
+		model: mongoose.model('users', userSchema),
 	};
-
-	return users;
 }
