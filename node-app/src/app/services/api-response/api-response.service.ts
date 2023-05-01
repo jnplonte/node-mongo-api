@@ -60,7 +60,7 @@ export class ApiResponse {
 				break;
 
 			case 'login-failed':
-				message = 'Invalid Username or Password';
+				message = 'Invalid Phone Number or Password';
 				break;
 
 			default:

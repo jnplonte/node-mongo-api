@@ -1,18 +1,16 @@
 import { Request, Response } from 'express';
-import { Op } from 'sequelize';
 import { CoreMiddleware } from '../../../middlewares/core/core.middleware';
 
 import { UsersAttributes } from './../../../../models/users';
 
 export class LogIn extends CoreMiddleware {
-	constructor(app, private response, private helper) {
+	constructor(app, private response, private helper, private query) {
 		super(app);
 	}
 
 	get services() {
 		return {
 			'POST /login': 'login',
-			'POST /keylogin': 'keyLogin',
 		};
 	}
 
@@ -23,170 +21,87 @@ export class LogIn extends CoreMiddleware {
 	 * @apiGroup AUTHENTICATION
 	 * @apiPermission all
 	 *
-	 * @apiDescription authenticate user and provide JWT token
+	 * @apiDescription authenticate phone number and passowrd
 	 *
-	 * @apiBody {String} username user name
+	 * @apiBody {String} phoneNumber phone number
 	 * @apiBody {String} password MD5 hash password
-	 * @apiQuery {String} roleId role id <br/>Ex. ?roleId=1,2,3
+	 * @apiQuery {String} roleId role id <br/>Ex. ?roleId=ADMIN,USER
 	 */
 	login(req: Request, res: Response): void {
-		const reqParameters: string[] = ['username', 'password'];
+		const reqParameters: string[] = ['phoneNumber', 'password'];
 		if (!this.helper.validateData(req.body, reqParameters)) {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
-		const roleIds: Array<any> = req.query.roleId
-			? req.query.roleId
-				.toString()
-				.split(',')
-				.map((i) => Number(i))
-			: [];
+		const roleIds: Array<any> = req.query.roleId ? req.query.roleId.toString().split(',') : [];
 
 		const whereData = {
-			where: {
-				username: this.helper.cleanData(req.body.username),
-				active: true,
-			},
-			attributes: ['id', 'salt', 'loginAttempt', 'loginCount'],
+			phone: this.helper.cleanData(req.body.phoneNumber),
+			active: true,
+			verified: true,
 		};
 
 		if (roleIds.length >= 1) {
-			whereData['where']['roleId'] = {
-				[Op.in]: roleIds,
+			whereData['roleId'] = {
+				$in: roleIds,
 			};
 		}
 
 		let loginInfo: UsersAttributes = {};
-
-		return req.models.users
-			.findOne(whereData)
+		return this.query
+			.getOne(req.models.users, whereData)
 			.then((user: UsersAttributes) => {
-				if (!user) {
-					return Promise.reject('');
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'login', '');
 				}
 
 				loginInfo = user;
-
-				return req.models.users.findOne({
-					where: {
-						username: this.helper.cleanData(req.body.username),
-						password: this.helper.getPassword(req.body.password, loginInfo.salt),
-						active: true,
-					},
-					attributes: ['id', 'username', 'firstName', 'lastName', 'roleId', 'loginCount'],
+				return this.query.getOne(req.models.users, {
+					_id: user._id,
+					password: this.helper.getPassword(req.body.password, user.salt),
 				});
 			})
 			.then((user: UsersAttributes) => {
-				if (!user) {
-					return this.updateLoginAttempt(req.models.users, loginInfo.id, loginInfo.loginAttempt).then((data) =>
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.updateLoginAttempt(req.models.users, loginInfo._id, loginInfo.loginAttempt).then(() =>
 						this.response.failed(res, 'login', '')
 					);
 				}
 
-				const cleanUser: UsersAttributes = this.helper.cleanSequelizeData(user);
-				return this.updateLastLogIn(req.models.users, cleanUser.id, cleanUser.loginCount).then(
-					// permission level hardcoded to 1 first
-					(data) =>
-						this.response.success(res, 'login', this.helper.createJwtToken({ ...cleanUser, permissionLevel: 1 }))
+				return this.updateLastLogIn(req.models.users, user._id, user.loginCount).then(() =>
+					this.response.success(
+						res,
+						'login',
+						this.helper.createJwtToken({
+							id: user._id,
+							phone: user.phone,
+							roleId: user.roleId,
+						})
+					)
 				);
 			})
 			.catch((error) => this.response.failed(res, 'login', error));
-	}
-
-	/**
-	 * @api {post} /auth/login key login user
-	 * @apiVersion 1.0.0
-	 * @apiName keyLogin
-	 * @apiGroup AUTHENTICATION
-	 * @apiPermission all
-	 *
-	 * @apiDescription authenticate user and provide JWT token
-	 *
-	 * @apiBody {String} type login type
-	 * @apiBody {String} email email address
-	 * @apiBody {String} key login key
-	 * @apiQuery {String} roleId role id <br/>Ex. ?roleId=1,2,3
-	 */
-	keyLogin(req: Request, res: Response): void {
-		const reqParameters: string[] = ['type', 'email', 'key'];
-		if (!this.helper.validateData(req.body, reqParameters)) {
-			return this.response.failed(res, 'data', reqParameters);
-		}
-
-		const roleIds: Array<any> = req.query.roleId
-			? req.query.roleId
-				.toString()
-				.split(',')
-				.map((i) => Number(i))
-			: [];
-
-		const whereData = {
-			where: {
-				email: Buffer.from(req.body.email).toString('base64'),
-				active: true,
-			},
-			attributes: ['id', 'loginAttempt', 'loginCount'],
-		};
-
-		if (roleIds.length >= 1) {
-			whereData['where']['roleId'] = {
-				[Op.in]: roleIds,
-			};
-		}
-
-		let loginInfo: UsersAttributes = {};
-
-		return req.models.users
-			.findOne(whereData)
-			.then((user: UsersAttributes) => {
-				if (!user) {
-					return Promise.reject('');
-				}
-
-				loginInfo = user;
-
-				return req.models.users.findOne({
-					where: {
-						email: Buffer.from(req.body.email).toString('base64'),
-						socialMedia: this.helper.cleanData(req.body.type),
-						socialMediaKey: this.helper.cleanData(req.body.key),
-						active: true,
-					},
-					attributes: ['id', 'username', 'firstName', 'lastName', 'roleId', 'loginCount'],
-				});
-			})
-			.then((user: UsersAttributes) => {
-				if (!user) {
-					return this.updateLoginAttempt(req.models.users, loginInfo.id, loginInfo.loginAttempt).then((data) =>
-						this.response.failed(res, 'login', '')
-					);
-				}
-
-				const cleanUser: UsersAttributes = this.helper.cleanSequelizeData(user);
-				return this.updateLastLogIn(req.models.users, cleanUser.id, cleanUser.loginCount).then(
-					// permission level hardcoded to 1 first
-					(data) =>
-						this.response.success(res, 'login', this.helper.createJwtToken({ ...cleanUser, permissionLevel: 1 }))
-				);
-			})
-			.catch((error) => this.response.failed(res, 'login', error));
-	}
-
-	private updateLastLogIn(model: any, id: string = '', loginCount: number = 0): Promise<any> {
-		const data = {
-			lastLogin: new Date(),
-			loginAttempt: 0,
-			loginCount: Number(loginCount) + 1,
-		};
-
-		return model.update(data, { where: { id: id } });
 	}
 
 	private updateLoginAttempt(model: any, id: string = '', loginAttempt: number = 0): Promise<any> {
-		const data = {
-			loginAttempt: Number(loginAttempt) + 1,
-		};
+		return this.query.update(
+			model,
+			{ _id: id },
+			{
+				loginAttempt: Number(loginAttempt) + 1,
+			}
+		);
+	}
 
-		return model.update(data, { where: { id: id } });
+	private updateLastLogIn(model: any, id: string = '', loginCount: number = 0): Promise<any> {
+		return this.query.update(
+			model,
+			{ _id: id },
+			{
+				lastLogin: new Date(),
+				loginAttempt: 0,
+				loginCount: Number(loginCount) + 1,
+			}
+		);
 	}
 }

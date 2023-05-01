@@ -4,7 +4,7 @@ import { CoreMiddleware } from '../../../middlewares/core/core.middleware';
 import { UsersAttributes } from './../../../../models/users';
 
 export class ForgotPassword extends CoreMiddleware {
-	constructor(app, private response, private helper, private notification) {
+	constructor(app, private response, private helper, private query) {
 		super(app);
 	}
 
@@ -22,7 +22,7 @@ export class ForgotPassword extends CoreMiddleware {
 	 * @apiGroup AUTHENTICATION
 	 * @apiPermission all
 	 *
-	 * @apiDescription change user password
+	 * @apiDescription forgot user password
 	 *
 	 * @apiBody {String} forgotPasswordKey forgot password key
 	 * @apiBody {String} password MD5 hash password
@@ -33,87 +33,80 @@ export class ForgotPassword extends CoreMiddleware {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
-		const whereData = {
-			where: {
-				forgotPasswordKey: decodeURIComponent(req.body.forgotPasswordKey),
-				active: true,
-			},
-		};
-
-		req.body.salt = this.helper.generateRandomString();
-		req.body.password = this.helper.getPassword(req.body.password, req.body.salt);
-		req.body.passwordExpiry = this.helper.passwordExpiry;
-		req.body.forgotPasswordKey = '';
-
 		const data = req.body;
 
-		return req.models.users
-			.update(this.helper.cleanData(data), whereData)
-			.then((user: number[]) => (user[0] ? this.response.success(res, 'put') : this.response.failed(res, 'put')))
-			.catch((error) => this.response.failed(res, 'put', error));
+		const whereData = {
+			forgotPasswordKey: data.forgotPasswordKey,
+			active: true,
+			verified: true,
+		};
+
+		data.salt = this.helper.generateRandomString();
+		data.password = this.helper.getPassword(req.body.password, req.body.salt);
+		data.passwordExpiry = this.helper.passwordExpiry;
+		data.forgotPasswordKey = '';
+		data.loginAttempt = 0;
+
+		return this.query
+			.update(req.models.users, whereData, this.helper.cleanData(data))
+			.then((user: UsersAttributes) => {
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'forgot-password', '');
+				}
+
+				return this.response.success(res, 'forgot-password', user._id);
+			})
+			.catch((error) => this.response.failed(res, 'forgot-password', error));
 	}
 
 	/**
-	 * @api {post} /auth/forgotsend forgot user password
+	 * @api {post} /auth/forgotsend send user password otp
 	 * @apiVersion 1.0.0
 	 * @apiName forgotSend
 	 * @apiGroup AUTHENTICATION
 	 * @apiPermission all
 	 *
-	 * @apiDescription forgot user password
+	 * @apiDescription send user password otp
 	 *
-	 * @apiBody {String} username user name
-	 * @apiBody {String} return url callback <br /> Expected Value: `https://wwww.jnpl.me/forgot?p={{key}}`
-	 * @apiBody {String} [subject] email subject
-	 * @apiBody {String} [template] email template
-	 * @apiBody {String} [logo] email logo
+	 * @apiBody {String} phoneNumber phone number
 	 */
 	forgotSend(req: Request, res: Response): void {
-		const reqParameters: string[] = ['username', 'return'];
+		const reqParameters: string[] = ['phoneNumber'];
 		if (!this.helper.validateData(req.body, reqParameters)) {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
 		const whereData = {
-			where: {
-				username: req.body.username,
-				active: true,
-			},
+			phone: this.helper.cleanData(req.body.phoneNumber),
+			active: true,
+			verified: true,
 		};
 
-		let userInfo: UsersAttributes = {};
-
+		let forgotPasswordKeyOtp: string = '';
 		return req.models.users
 			.findOne(whereData)
 			.then((user: UsersAttributes) => {
-				if (!user) {
-					return Promise.reject('invalid username');
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'forgot-password', '');
 				}
 
-				userInfo = this.helper.cleanSequelizeData(user);
-				userInfo.forgotPasswordKey = this.helper.encode(
-					`${this.helper.generateRandomString(50)}${new Date().getTime()}`
+				forgotPasswordKeyOtp = this.helper.encode(`${this.helper.generateRandomString(50)}${new Date().getTime()}`);
+
+				return this.query.update(
+					req.models.users,
+					{ _id: user._id },
+					{
+						forgotPasswordKey: forgotPasswordKeyOtp,
+					}
 				);
-
-				return req.models.users.update(
-					{ forgotPasswordKey: userInfo.forgotPasswordKey, loginAttempt: 0 },
-					{ where: { id: userInfo.id, active: true } }
-				);
 			})
-			.then((user: number[]) => {
-				if (!user[0]) {
-					return Promise.reject('forgot token update failed');
+			.then((user: UsersAttributes) => {
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'forgot-password', '');
 				}
 
-				return this.notification.sendForgotPasswordEmail(userInfo.email, { ...userInfo, ...req.body }, req.query.test);
+				return this.response.success(res, 'forgot-password', forgotPasswordKeyOtp);
 			})
-			.then((forgotPasswordUrl: string) => {
-				if (!forgotPasswordUrl) {
-					return Promise.reject('email forgot failed');
-				}
-
-				return this.response.success(res, 'forgot', forgotPasswordUrl);
-			})
-			.catch((error) => this.response.failed(res, 'forgot', error));
+			.catch((error) => this.response.failed(res, 'forgot-password', error));
 	}
 }

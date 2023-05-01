@@ -27,7 +27,7 @@ describe('login component', () => {
 			.post('/v1/auth/login?test=true')
 			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
 			.send({
-				username: 'spiderman',
+				phoneNumber: '639111111111',
 				password: 'random-password',
 			})
 			.expect('Content-Type', /json/)
@@ -47,30 +47,8 @@ describe('login component', () => {
 			.post('/v1/auth/login?test=true')
 			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
 			.send({
-				username: 'spiderman',
+				phoneNumber: '639111111111',
 				password: '5f4dcc3b5aa765d61d8327deb882cf99',
-			})
-			.expect('Content-Type', /json/)
-			.expect(200, (err, res) => {
-				if (err) {
-					return done(err);
-				}
-
-				expect(res.body.status).to.equal('success');
-				expect(res.body.data).to.be.a('string');
-
-				done();
-			});
-	});
-
-	it('should key login user', (done) => {
-		supertest(app)
-			.post('/v1/auth/keylogin?test=true')
-			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
-			.send({
-				type: 'FACEBOOK',
-				key: '111111111111',
-				email: 'spiderman@gmail.com',
 			})
 			.expect('Content-Type', /json/)
 			.expect(200, (err, res) => {

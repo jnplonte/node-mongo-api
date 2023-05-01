@@ -4,7 +4,7 @@ import { CoreMiddleware } from '../../../middlewares/core/core.middleware';
 import { UsersAttributes } from './../../../../models/users';
 
 export class VerifyUser extends CoreMiddleware {
-	constructor(app, private response, private helper, private notification) {
+	constructor(app, private response, private helper, private query) {
 		super(app);
 	}
 
@@ -25,73 +25,83 @@ export class VerifyUser extends CoreMiddleware {
 	 * @apiDescription verify user
 	 *
 	 * @apiBody {String} verificationKey verification key
-	 * @apiBody {String} username user name
+	 * @apiBody {String} phoneNumber phone number
 	 */
 	verify(req: Request, res: Response): void {
-		const reqParameters: string[] = ['username', 'verificationKey'];
+		const reqParameters: string[] = ['verificationKey', 'phoneNumber'];
 		if (!this.helper.validateData(req.body, reqParameters)) {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
+		const data = req.body;
+
 		const whereData = {
-			where: {
-				verificationKey: decodeURIComponent(req.body.verificationKey),
-				username: req.body.username,
-				active: true,
-				verified: false,
-			},
+			phone: this.helper.cleanData(data.phoneNumber),
+			verificationKey: data.verificationKey,
+			active: true,
+			// verified: false,
 		};
 
-		return req.models.users
-			.update({ verified: true }, whereData)
-			.then((user: number[]) => (user[0] ? this.response.success(res, 'verify') : this.response.failed(res, 'verify')))
+		return this.query
+			.update(req.models.users, whereData, { verified: true, verificationKey: '' })
+			.then((user: UsersAttributes) => {
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'verify', '');
+				}
+
+				return this.response.success(res, 'verify', user._id);
+			})
 			.catch((error) => this.response.failed(res, 'verify', error));
 	}
 
 	/**
-	 * @api {post} /auth/verifysend send verification email
+	 * @api {post} /auth/verifysend send verification otp
 	 * @apiVersion 1.0.0
 	 * @apiName verifysend
 	 * @apiGroup AUTHENTICATION
 	 * @apiPermission all
 	 *
-	 * @apiDescription send verification email
+	 * @apiDescription send verification otp
 	 *
-	 * @apiBody {String} username user name
-	 * @apiBody {String} return url callback <br /> Expected Value: `https://wwww.jnpl.me/forgot?p={{key}}`
-	 * @apiBody {String} [subject] email subject
-	 * @apiBody {String} [template] email template
-	 * @apiBody {String} [logo] email logo
+	 * @apiBody {String} phoneNumber phone number
 	 */
 	verifySend(req: Request, res: Response): void {
-		const reqParameters: string[] = ['username', 'return'];
+		const reqParameters: string[] = ['phoneNumber'];
 		if (!this.helper.validateData(req.body, reqParameters)) {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
 		const whereData = {
-			where: {
-				username: req.body.username,
-				active: true,
-			},
+			phone: this.helper.cleanData(req.body.phoneNumber),
+			active: true,
+			// verified: false,
 		};
 
+		let verificationKeyOtp: string = '';
 		return req.models.users
 			.findOne(whereData)
 			.then((user: UsersAttributes) => {
-				if (!user) {
-					return Promise.reject('invalid username');
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'verify', '');
 				}
 
-				const userInfo = this.helper.cleanSequelizeData(user);
-				return this.notification.sendVerificationEmail(userInfo.email, { ...userInfo, ...req.body }, req.query.test);
+				// NOTE: generate OTP here
+				verificationKeyOtp = this.helper.encode(`${this.helper.generateRandomString(50)}${new Date().getTime()}`);
+
+				return this.query.update(
+					req.models.users,
+					{ _id: user._id },
+					{
+						verificationKey: verificationKeyOtp,
+					}
+				);
 			})
-			.then((verificationUrl: string) => {
-				if (!verificationUrl) {
-					return Promise.reject('email verificaion failed');
+			.then((user: UsersAttributes) => {
+				if (!user || this.helper.isEmptyObject(user)) {
+					return this.response.failed(res, 'verify', '');
 				}
 
-				return this.response.success(res, 'verify', verificationUrl);
+				return this.response.success(res, 'verify', verificationKeyOtp);
 			})
 			.catch((error) => this.response.failed(res, 'verify', error));
 	}

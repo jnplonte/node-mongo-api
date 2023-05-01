@@ -9,11 +9,10 @@ export const baseConfig = {
 	secretKey: 'x-node-api-key',
 	secretKeyHash: 'KuQmvnxXEjR7KXwfucgerTf6YwZV5Amz5awwxf5PFgkpGrb3Jn',
 	secretKeyLength: 5,
-	getQueryLimit: 10,
 	passwordExpiryLength: 30,
-	defaultUserRole: 3, // should match on database `roles`
-	defaultLanguage: 1, // should match on database `languages`
-	defaultCountry: 169, // should match on database `countries`
+	defaultUserRole: 'USER', // should match on database `roles`
+	defaultLanguage: 'ENGLISH', // should match on database `languages`
+	defaultCountry: 'PHILIPPINES', // should match on database `countries`
 
 	defaultEmail: 'jnpl.onte@gmail.com',
 	mail: {

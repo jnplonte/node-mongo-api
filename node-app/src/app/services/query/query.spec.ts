@@ -1,5 +1,3 @@
-import { Op } from 'sequelize';
-
 import { expect } from 'chai';
 import { Query } from './query.service';
 import { baseConfig } from './../../../config';
@@ -18,10 +16,6 @@ describe('query service', () => {
 		return finalData['data'];
 	};
 
-	const cleanfinalData = function (data) {
-		return typeof data.get !== 'undefined' ? data.get({ plain: true }) : data;
-	};
-
 	beforeEach((done) => {
 		services = new Query(baseConfig);
 		models = setup();
@@ -31,16 +25,16 @@ describe('query service', () => {
 
 	it('should check if models exists', (done) => {
 		expect(models.users).to.exist;
-		expect(models.users.findAll).to.exist;
-		expect(models.users.findAll).to.be.a('function');
+		expect(models.users.find).to.exist;
+		expect(models.users.find).to.be.a('function');
 		expect(models.users.findOne).to.exist;
 		expect(models.users.findOne).to.be.a('function');
-		expect(models.users.create).to.exist;
-		expect(models.users.create).to.be.a('function');
-		expect(models.users.update).to.exist;
-		expect(models.users.update).to.be.a('function');
-		expect(models.users.destroy).to.exist;
-		expect(models.users.destroy).to.be.a('function');
+		expect(models.users.insertMany).to.exist;
+		expect(models.users.insertMany).to.be.a('function');
+		expect(models.users.findOneAndUpdate).to.exist;
+		expect(models.users.findOneAndUpdate).to.be.a('function');
+		expect(models.users.findOneAndRemove).to.exist;
+		expect(models.users.findOneAndRemove).to.be.a('function');
 
 		done();
 	});
@@ -49,7 +43,7 @@ describe('query service', () => {
 		services
 			.getAll(models.users, {})
 			.then((data) => {
-				expect(getfinalData(data)).to.have.lengthOf.above(1);
+				expect(getfinalData(data)).to.be.a('Array');
 
 				done();
 			})
@@ -69,22 +63,17 @@ describe('query service', () => {
 
 	it('should get one data', (done) => {
 		services
-			.getOne(models.users, {
-				where: { id: 'da744a7e-c058-4082-ba3e-d52f36293698' },
-			})
+			.getOne(models.users, { _id: '644aa3d0595af809a6dfbf75' })
 			.then((data) => {
-				expect(cleanfinalData(data)).to.have.property('id');
+				expect(data).to.be.a('Object');
 
 				done();
 			})
 			.catch(done);
 	});
 
-	it('should get the query request', (done) => {
-		expect(services.appendRequestQuery({}, 'ENName:LTL|TCName:XXX')).to.have.eql({
-			ENName: { [Op.like]: '%LTL%' },
-			TCName: { [Op.like]: '%XXX%' },
-		});
+	it('should get the mongo request', (done) => {
+		expect(services.appendRequestQuery({}, 'ENName:LTL|TCName:XXX')).to.have.eql({ ENName: /LTL/i, TCName: /XXX/i });
 
 		done();
 	});

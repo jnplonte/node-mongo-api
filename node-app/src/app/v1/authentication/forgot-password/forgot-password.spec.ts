@@ -29,8 +29,7 @@ describe('forgot password component', () => {
 			.post('/v1/auth/forgotsend?test=true')
 			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
 			.send({
-				username: 'spiderman',
-				return: 'https://wwww.jnpl.me/forgot?p={{key}}',
+				phoneNumber: '639111111111',
 			})
 			.expect('Content-Type', /json/)
 			.expect(200, (err, res) => {

@@ -43,11 +43,6 @@ export class CoreMiddleware extends BaseMiddleware {
 	}
 
 	protected autoFillPostInformation(data: object = {}, authData: object = {}): object {
-		if (typeof authData['id'] !== 'undefined') {
-			data['createdUserId'] = authData['id'];
-			data['updatedUserId'] = authData['id'];
-		}
-
 		data['createdAt'] = new Date();
 		data['updatedAt'] = new Date();
 
@@ -56,11 +51,6 @@ export class CoreMiddleware extends BaseMiddleware {
 
 	protected autoFillAllPostInformation(data: Array<object>, authData: object = {}): Array<object> {
 		return data.map((dataval) => {
-			if (typeof authData['id'] !== 'undefined') {
-				dataval['createdUserId'] = authData['id'];
-				dataval['updatedUserId'] = authData['id'];
-			}
-
 			dataval['createdAt'] = new Date();
 			dataval['updatedAt'] = new Date();
 
@@ -69,10 +59,6 @@ export class CoreMiddleware extends BaseMiddleware {
 	}
 
 	protected autoFillPutInformation(data: object = {}, authData: object = {}): object {
-		if (typeof authData['id'] !== 'undefined') {
-			data['updatedUserId'] = authData['id'];
-		}
-
 		data['updatedAt'] = new Date();
 
 		return data;
@@ -80,10 +66,6 @@ export class CoreMiddleware extends BaseMiddleware {
 
 	protected autoFillAllPutInformation(data: Array<object>, authData: object = {}): Array<object> {
 		return data.map((dataval) => {
-			if (typeof authData['id'] !== 'undefined') {
-				dataval['updatedUserId'] = authData['id'];
-			}
-
 			dataval['updatedAt'] = new Date();
 
 			return dataval;
@@ -91,7 +73,7 @@ export class CoreMiddleware extends BaseMiddleware {
 	}
 
 	protected isAdmin(authData: object = {}): boolean {
-		return authData['roleId'] && authData['roleId'] === 1;
+		return authData['roleId'] && authData['roleId'] === 'ADMIN';
 	}
 
 	protected cacheCheck(pageCache?, nameCache?) {

@@ -1,5 +1,6 @@
 import { Helper } from './../helper/helper.service';
-import { Op } from 'sequelize';
+
+import { Types } from 'mongoose';
 
 export class Query {
 	helper: Helper;
@@ -8,190 +9,260 @@ export class Query {
 		this.helper = new Helper(this.config);
 	}
 
-	appendRequestOrder(orderData: Array<any> = [], reqOrder: string = ''): object {
-		const reqOrderArray: Array<any> = reqOrder.split(':');
-		const sorting: string = reqOrderArray[1] === 'ASC' || reqOrderArray[1] === 'DESC' ? reqOrderArray[1] : 'ASC';
+	post(model, data: Object = {}) {
+		data['createdAt'] = new Date();
+		data['updatedAt'] = new Date();
 
-		orderData.push([...reqOrderArray[0].split('.'), sorting]);
-
-		return orderData;
+		return new model(data)
+			.save()
+			.then((dataVal) => dataVal || {})
+			.catch((error) => error);
 	}
 
-	getAll(model, data: Object = {}, reqQuery: Object = {}): Promise<any> {
-		// if (Object.keys(reqQuery).length === 0) {
-		//     return model.findAll(this.helper.cleanData(data)).then( (dataValue) => {
-		//         return { 'data': dataValue || [], 'pagination': {} };
-		//     });
-		// }
+	postBulk(model, data: Array<any> = []) {
+		data = data.map((dData) => {
+			dData['createdAt'] = new Date();
+			dData['updatedAt'] = new Date();
 
-		const page: number = typeof reqQuery['page'] !== 'undefined' ? reqQuery['page'] : 1;
-		const limit: number =
-			typeof reqQuery['limit'] !== 'undefined' ? Number(reqQuery['limit']) : Number(this.config.getQueryLimit);
+			return dData;
+		});
+
+		return model
+			.insertMany(data)
+			.then((dataVal) => dataVal || [])
+			.catch((error) => error);
+	}
+
+	getId(model, id: string = '') {
+		return model
+			.findById(id)
+			.then((dataVal) => (dataVal ? dataVal.toObject() : {}))
+			.catch((error) => error);
+	}
+
+	getOne(model, query: Object = {}) {
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
+		}
+
+		return model
+			.findOne(query, {}, { sort: { createdAt: -1 } })
+			.then((dataVal) => (dataVal ? dataVal.toObject() : {}))
+			.catch((error) => error);
+	}
+
+	getAll(model, data: Object = {}, reqQuery: Object = {}, fields = []): Promise<any> {
+		data = this.helper.cleanData(data);
+
+		const page: number = typeof reqQuery['page'] !== 'undefined' ? Number(reqQuery['page']) : 1;
+		const limit: number = typeof reqQuery['limit'] !== 'undefined' ? Number(reqQuery['limit']) : 10;
+		const offset: number = limit * (page - 1);
+
+		const sortAt: string = typeof reqQuery['sortAt'] !== 'undefined' ? reqQuery['sortAt'] : 'DESC';
+		const sortBy: string = typeof reqQuery['sortBy'] !== 'undefined' ? reqQuery['sortBy'] : 'createdAt';
 
 		if (typeof reqQuery['query'] !== 'undefined') {
-			data['where'] = this.appendRequestQuery(data['where'], reqQuery['query']);
+			data = this.appendRequestQuery(data, reqQuery['query']);
 		}
 
-		if (typeof reqQuery['order'] !== 'undefined') {
-			data['order'] = this.appendRequestOrder(data['order'], reqQuery['order']);
+		if (typeof reqQuery['queryArray'] !== 'undefined') {
+			data = this.appendRequestQueryArray(data, reqQuery['queryArray']);
 		}
 
-		data['offset'] = limit * (page - 1);
-		data['limit'] = limit;
+		return model.countDocuments(data).then((count: number) =>
+			model
+				.find(data, fields.length >= 1 ? fields : null)
+				.sort({ [sortBy]: sortAt === 'DESC' ? -1 : 1 })
+				.skip(offset)
+				.limit(limit)
+				.then((dataValue) => {
+					const allPagination: Object = {};
 
-		if (data['include']) {
-			data['distinct'] = true;
-		}
+					allPagination['totalData'] = count ? Number(count) : 0;
+					allPagination['totalPage'] = Number(Math.ceil(allPagination['totalData'] / limit));
+					allPagination['currentPage'] = Number(page);
 
-		return model.findAndCountAll(this.helper.cleanData(data)).then((dataValue) => {
-			const allPagination: Object = {};
-
-			allPagination['totalData'] = dataValue.count.length
-				? Number(dataValue.count.length)
-				: Number(dataValue.count || 0);
-			allPagination['totalPage'] = Number(Math.ceil(allPagination['totalData'] / limit));
-			allPagination['currentPage'] = Number(page);
-
-			return { data: dataValue.rows || [], pagination: allPagination };
-		});
-	}
-
-	getOne(model, data: Object = {}, reqKey: string, reqValue: string | number | boolean): Promise<any> {
-		const whereData: Object = {};
-
-		if (reqKey && reqValue) {
-			whereData[reqKey] = reqValue;
-		} else {
-			whereData['id'] = reqValue;
-		}
-
-		data['where'] = Object.assign(whereData, data['where'] || {});
-
-		return model.findOne(this.helper.cleanData(data));
-	}
-
-	post(model, data: Object = {}, include?: Object): Promise<any> {
-		return model.create(this.helper.cleanDataWithNull(data), include ? include : {});
-	}
-
-	postBulk(model, data: Array<any> = [], include?: Object): Promise<any> {
-		data = data.sort((a, b) => (!a.id ? -1 : !b.id ? 1 : 0));
-
-		return model.bulkCreate(this.helper.cleanDataWithNull(data), include ? include : {});
-	}
-
-	postGet(model, data: Object = {}, getCreated?: boolean): Promise<any> {
-		return model.findOrCreate({ where: this.helper.cleanDataWithNull(data) }).spread((modelData, created) => {
-			if (typeof getCreated !== 'undefined') {
-				return !getCreated ? modelData.get({ plain: true }) : modelData;
-			} else {
-				return modelData.get({ plain: true });
-			}
-		});
-	}
-
-	put(model, data: Object = {}, whereData: Object = {}): Promise<any> {
-		return model.update(this.helper.cleanDataWithNull(data), whereData);
-	}
-
-	putGet(model, data: Object = {}, whereData: Object = {}): Promise<any> {
-		const wData = this.helper.cleanData(whereData);
-		const wDataNull = this.helper.cleanDataWithNull(data);
-
-		return model.findOne(wData).then((modelData) => {
-			if (!modelData) {
-				return model.create(wDataNull);
-			}
-
-			return modelData.update(wDataNull, wData);
-		});
-	}
-
-	putIncrement(model, data: Object = {}, whereData: Object = {}): Promise<any> {
-		return model.increment(data, whereData);
-	}
-
-	putDecrement(model, data: Object = {}, whereData: Object = {}): Promise<any> {
-		return model.decrement(data, whereData);
-	}
-
-	delete(model, data: Object = {}): Promise<any> {
-		return model.destroy(this.helper.cleanData(data));
-	}
-
-	appendfilterQuery(reqFilter: string = ''): object {
-		if (this.helper.isEmpty(reqFilter)) {
-			return {};
-		}
-
-		const reqQueryArray: Array<any> = reqFilter.split('|');
-		const finalQuery: Object = {};
-
-		reqQueryArray.forEach((val: any) => {
-			val = val.toString();
-			if (val.indexOf('.') >= 1 && val.indexOf(':') >= 1) {
-				const datavalArray: Array<any> = val.split(':');
-
-				const keyValue = datavalArray[0] || '';
-
-				let valValue = datavalArray[1] || '';
-				let splitArray: Array<any> = valValue.split(',');
-				if (splitArray.length > 1) {
-					splitArray = splitArray.map((splitval) => (splitval === 'null' ? '' : splitval));
-					valValue = { [Op.in]: splitArray };
-				} else {
-					if (valValue === 'null') {
-						valValue = '';
-					} else {
-						valValue = this.helper.isInteger(valValue) ? valValue : { [Op.like]: '%' + valValue + '%' };
+					if (dataValue.length >= 1) {
+						dataValue = dataValue.map((dData) => dData.toObject());
 					}
-				}
 
-				const keyValueArray: Array<any> = keyValue.split('.');
-				const keyValueFirst = keyValueArray[0].toString();
-				keyValueArray.shift();
-				const keyValueSecond = keyValueArray.join('.');
-
-				if (finalQuery[keyValueFirst]) {
-					finalQuery[keyValueFirst][this.getChildKey(keyValueSecond)] = valValue;
-				} else {
-					finalQuery[keyValueFirst] = {};
-					finalQuery[keyValueFirst][this.getChildKey(keyValueSecond)] = valValue;
-				}
-			}
-		});
-
-		return finalQuery;
+					return { data: dataValue || [], pagination: allPagination };
+				})
+		);
 	}
 
-	getChildKey(key: string = ''): string {
-		if (key.indexOf('.') >= 1) {
-			key = `$${key}$`;
+	getDistinct(model, data: Object = {}, reqQuery: Object = {}, key: string = ''): Promise<any> {
+		data = this.helper.cleanData(data);
+
+		return model
+			.find(data)
+			.distinct(key)
+			.then((dataValue) => {
+				if (dataValue.length >= 1) {
+					dataValue = dataValue.map((dData) => dData.toObject());
+				}
+
+				return { data: dataValue || [], pagination: {} };
+			});
+	}
+
+	getAllField(model, query: Object = {}) {
+		return model
+			.find(query, null)
+			.sort({ createdAt: -1 })
+			.then((dataValue) => {
+				if (dataValue.length >= 1) {
+					dataValue = dataValue.map((dData) => dData.toObject());
+				}
+
+				return dataValue;
+			})
+			.catch((error) => error);
+	}
+
+	update(model, query: Object = {}, data: Object = {}) {
+		data['updatedAt'] = new Date();
+
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
 		}
 
-		return key;
+		return model
+			.findOneAndUpdate(query, { $set: data }, { new: true })
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
 	}
 
-	private appendRequestQuery(whereData: Object = {}, reqQuery: string = ''): object {
+	updateAll(model, query: Object = {}, data: Object = {}) {
+		data['updatedAt'] = new Date();
+
+		if (this.helper.isNotEmpty(query['_id'])) {
+			if (this.helper.isNotEmpty(query['_id']['$in'])) {
+				query['_id']['$in'] = this.convertObjectArray(query['_id']['$in']);
+			} else {
+				query['_id'] = new Types.ObjectId(query['_id']);
+			}
+		}
+
+		return model
+			.updateMany(query, { $set: data }, { new: true })
+			.then((dataVal) => {
+				if (dataVal.nModified && dataVal.nModified >= 1) {
+					return model.find(query).sort({ createdAt: -1 });
+				} else {
+					return [];
+				}
+			})
+			.catch((error) => error);
+	}
+
+	updateIncrement(model, query: Object = {}, data: Object = {}) {
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
+		}
+
+		return model
+			.findOneAndUpdate(query, { $set: { updatedAt: new Date() }, $inc: data }, { new: true })
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
+	}
+
+	updatePushIncrement(model, query: Object = {}, data: Object = {}, dataIncrement: Object = {}) {
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
+		}
+
+		return model
+			.findOneAndUpdate(query, { $set: { updatedAt: new Date() }, $addToSet: data, $inc: dataIncrement }, { new: true })
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
+	}
+
+	delete(model, query: Object = {}) {
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
+		}
+
+		return model
+			.findOneAndRemove(query)
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
+	}
+
+	deleteAll(model, query: Object = {}) {
+		if (this.helper.isNotEmpty(query['_id'])) {
+			query['_id'] = new Types.ObjectId(query['_id']);
+		}
+
+		return model
+			.deleteMany(query)
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
+	}
+
+	count(model, query: Object = {}) {
+		return model
+			.countDocuments(query)
+			.then((dataVal) => dataVal)
+			.catch((error) => error);
+	}
+
+	protected convertObjectArray(data: string[] = []): Array<any> {
+		return data.map((dData) => new Types.ObjectId(dData));
+	}
+
+	private appendRequestQuery(whereData: Object = {}, reqQuery: string = ''): Object {
 		const reqQueryArray: Array<any> = reqQuery.split('|');
 		const finalQuery: Object = {};
 
 		reqQueryArray.forEach((val: any) => {
 			const valArray: Array<any> = val.split(':');
-			valArray[1] = valArray[1].toString();
-
-			if (this.helper.isNotEmpty(valArray[0]) && valArray[1]) {
-				let splitArray: Array<any> = valArray[1].split(',');
+			if (valArray[0] && valArray[1]) {
+				let splitArray: Array<any> = valArray[1].toString().split(',');
 				if (splitArray.length > 1) {
-					splitArray = splitArray.map((splitval) => (splitval === 'null' ? '' : splitval));
-					finalQuery[this.getChildKey(valArray[0])] = { [Op.in]: splitArray };
+					splitArray = splitArray.map((splitval) => (splitval === 'null' ? '' : new RegExp(splitval, 'i')));
+
+					finalQuery[valArray[0]] = { $in: splitArray };
 				} else {
 					if (valArray[1] === 'null') {
-						finalQuery[this.getChildKey(valArray[0])] = '';
+						finalQuery[valArray[0]] = '';
 					} else {
-						finalQuery[this.getChildKey(valArray[0])] = this.helper.isInteger(valArray[1])
-							? valArray[1]
-							: { [Op.like]: '%' + valArray[1] + '%' };
+						// finalQuery[valArray[0]] = (this.helper.isInteger(valArray[1])) ? valArray[1] : new RegExp(valArray[1], 'i');
+						finalQuery[valArray[0]] = new RegExp(valArray[1], 'i');
+					}
+				}
+			}
+		});
+
+		return { ...whereData, ...finalQuery };
+	}
+
+	private appendRequestQueryArray(whereData: Object = {}, reqQuery: string = ''): Object {
+		const reqQueryArray: Array<any> = reqQuery.split('|');
+		const finalQuery: Object = {};
+
+		reqQueryArray.forEach((val: any) => {
+			const valKeyArray: Array<any> = val.split('.');
+
+			if (valKeyArray[0] && valKeyArray[1]) {
+				if (!finalQuery[valKeyArray[0]]) {
+					finalQuery[valKeyArray[0]] = {};
+					finalQuery[valKeyArray[0]]['$elemMatch'] = {};
+				}
+
+				const valArray: Array<any> = valKeyArray[1].split(':');
+				if (valArray[0] && valArray[1]) {
+					let splitArray: Array<any> = valArray[1].toString().split(',');
+					if (splitArray.length > 1) {
+						splitArray = splitArray.map((splitval) => (splitval === 'null' ? '' : new RegExp(splitval, 'i')));
+						finalQuery[valKeyArray[0]]['$elemMatch'][valArray[0]] = { $in: splitArray };
+					} else {
+						if (valArray[1] === 'null') {
+							finalQuery[valKeyArray[0]]['$elemMatch'][valArray[0]] = '';
+						} else {
+							// finalQuery[valKeyArray[0]]['$elemMatch'][valArray[0]] = (this.helper.isInteger(valArray[1])) ? valArray[1] : new RegExp(valArray[1], 'i');
+							finalQuery[valKeyArray[0]]['$elemMatch'][valArray[0]] = new RegExp(valArray[1], 'i');
+						}
 					}
 				}
 			}

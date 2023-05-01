@@ -9,8 +9,7 @@ describe('verify user component', () => {
 			.post('/v1/auth/verify?test=true')
 			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
 			.send({
-				username: 'spiderman',
-				verificationKey: 'random-key',
+				phoneNumber: '639111111111',
 			})
 			.expect('Content-Type', /json/)
 			.expect(400, (err, res) => {
@@ -24,13 +23,12 @@ describe('verify user component', () => {
 			});
 	});
 
-	it('should send verification email', (done) => {
+	it('should send verification otp', (done) => {
 		supertest(app)
 			.post('/v1/auth/verifysend?test=true')
 			.set('x-node-api-key', 'S3VRbXZueFhFalI3S1h3ZnVjZ2VyVGY2WXdaVjVBbXo1YXd3eGY1UEZna3BHcmIzSm4=')
 			.send({
-				username: 'spiderman',
-				return: 'https://wwww.jnpl.me/verify?p={{key}}',
+				phoneNumber: '639111111111',
 			})
 			.expect('Content-Type', /json/)
 			.expect(200, (err, res) => {

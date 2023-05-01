@@ -7,7 +7,7 @@ import { expressCspHeader, SELF, EVAL } from 'express-csp-header';
 
 import * as redisCache from 'express-redis-cache';
 
-// import * as authenticationRoutes from './routes/authentication-route';
+import * as authenticationRoutes from './routes/authentication-route';
 
 import { setup } from './models';
 
@@ -112,7 +112,7 @@ class App {
 	}
 
 	private setRoute(): void {
-		// this.express = authenticationRoutes.setup(this.express, this.cache, baseConfig, mongo);
+		this.express = authenticationRoutes.setup(this.express, this.cache, baseConfig, mongo);
 	}
 
 	private setNotFound(): void {
