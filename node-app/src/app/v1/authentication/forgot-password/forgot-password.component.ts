@@ -33,7 +33,7 @@ export class ForgotPassword extends CoreMiddleware {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
-		const data = req.body;
+		const data: any = req.body;
 
 		const whereData = {
 			forgotPasswordKey: data.forgotPasswordKey,
@@ -51,7 +51,7 @@ export class ForgotPassword extends CoreMiddleware {
 			.update(req.models.users, whereData, this.helper.cleanData(data))
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'forgot-password', '');
+					return Promise.reject('invalid phone');
 				}
 
 				return this.response.success(res, 'forgot-password', user._id);
@@ -77,7 +77,7 @@ export class ForgotPassword extends CoreMiddleware {
 		}
 
 		const whereData = {
-			phone: this.helper.cleanData(req.body.phoneNumber),
+			phone: this.helper.cleanData(req.body.phoneNumber).toString(),
 			active: true,
 			verified: true,
 		};
@@ -87,9 +87,10 @@ export class ForgotPassword extends CoreMiddleware {
 			.findOne(whereData)
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'forgot-password', '');
+					return Promise.reject('invalid phone');
 				}
 
+				// NOTE: generate OTP
 				forgotPasswordKeyOtp = this.helper.encode(`${this.helper.generateRandomString(50)}${new Date().getTime()}`);
 
 				return this.query.update(
@@ -102,7 +103,7 @@ export class ForgotPassword extends CoreMiddleware {
 			})
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'forgot-password', '');
+					return Promise.reject('invalid phone');
 				}
 
 				return this.response.success(res, 'forgot-password', forgotPasswordKeyOtp);

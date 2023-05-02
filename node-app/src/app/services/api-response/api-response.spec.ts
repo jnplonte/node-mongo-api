@@ -28,7 +28,7 @@ describe('api response service', () => {
 	});
 
 	it('should get the error message', (done) => {
-		expect(services.getError('SequelizeDatabaseError')).to.equal('Database Error');
+		expect(services.getError('MongoServerError')).to.equal('Server Error');
 		expect(services.getError('NetworkingError')).to.equal('Network Error');
 
 		done();

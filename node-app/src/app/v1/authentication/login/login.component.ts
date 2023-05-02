@@ -36,7 +36,7 @@ export class LogIn extends CoreMiddleware {
 		const roleIds: Array<any> = req.query.roleId ? req.query.roleId.toString().split(',') : [];
 
 		const whereData = {
-			phone: this.helper.cleanData(req.body.phoneNumber),
+			phone: this.helper.cleanData(req.body.phoneNumber).toString(),
 			active: true,
 			verified: true,
 		};

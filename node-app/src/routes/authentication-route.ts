@@ -6,7 +6,7 @@ import { ApiResponse } from '../app/services/api-response/api-response.service';
 import { LogIn } from '../app/v1/authentication/login/login.component';
 import { VerifyUser } from '../app/v1/authentication/verify-user/verify-user.component';
 import { ForgotPassword } from '../app/v1/authentication/forgot-password/forgot-password.component';
-// import { Register } from '../app/v1/authentication/register/register.component';
+import { Register } from '../app/v1/authentication/register/register.component';
 
 export function setup(app, cache, config, models) {
 	const query = new Query(config);
@@ -37,7 +37,8 @@ export function setup(app, cache, config, models) {
 		new LogIn(appAuth, response, helper, query);
 		new VerifyUser(appAuth, response, helper, query);
 		new ForgotPassword(appAuth, response, helper, query);
-		// new Register(appAuth, response, helper, notification);
+
+		new Register(appAuth, response, helper, query);
 	});
 
 	return app;

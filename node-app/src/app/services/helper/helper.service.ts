@@ -49,16 +49,20 @@ export class Helper {
 		return this.config.secretKeyHash || '';
 	}
 
-	get defaultUserRole(): number {
-		return this.config.defaultUserRole || 5;
+	get defaultUserRole(): string {
+		return this.config.defaultUserRole || 'USER';
 	}
 
-	get defaultLanguage(): number {
-		return this.config.defaultLanguage || 1;
+	get defaultLanguage(): string {
+		return this.config.defaultLanguage || 'ENGLISH';
 	}
 
-	get defaultCurrency(): number {
-		return this.config.defaultCurrency || 85;
+	get defaultCountry(): string {
+		return 'NONE';
+	}
+
+	get defaultCity(): string {
+		return 'NONE';
 	}
 
 	get startDate(): string {

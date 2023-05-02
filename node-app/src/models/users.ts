@@ -110,7 +110,7 @@ export default function userModel(mongoose) {
 
 			active: {
 				type: Boolean,
-				default: false,
+				default: true,
 			},
 			verified: {
 				type: Boolean,

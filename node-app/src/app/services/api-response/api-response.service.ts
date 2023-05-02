@@ -73,13 +73,11 @@ export class ApiResponse {
 		let message: string = '';
 
 		switch (method) {
-			case 'SequelizeUniqueConstraintError':
-			case 'SequelizeDatabaseError':
-				message = 'Database Error';
+			case 'MongoServerError':
+				message = 'Server Error';
 				break;
 
 			case 'NetworkingError':
-			case 'SequelizeConnectionError':
 				message = 'Network Error';
 				break;
 

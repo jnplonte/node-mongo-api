@@ -12,7 +12,6 @@ export const baseConfig = {
 	passwordExpiryLength: 30,
 	defaultUserRole: 'USER', // should match on database `roles`
 	defaultLanguage: 'ENGLISH', // should match on database `languages`
-	defaultCountry: 'PHILIPPINES', // should match on database `countries`
 
 	defaultEmail: 'jnpl.onte@gmail.com',
 	mail: {

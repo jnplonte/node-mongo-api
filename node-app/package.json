@@ -18,7 +18,7 @@
 		"start": "concurrently \"tsc --watch\" \"nodemon ./dist/index.js\"",
 		"start:server": "node ./dist/index.js",
 		"test": "concurrently \"tsc\" \"PORT=8883 TEST_DIR='./dist/doc' ARTIFACTS_DIR='./dist/doc' COVERAGE_DIR='./dist/doc' mocha dist/**/*.spec.js --timeout 100000 --exit\"",
-		"test:one": "concurrently \"tsc\" \"mocha ./dist/app/v1/authentication/verify-user/verify-user.spec.js --timeout 100000 --no-coverage --exit\"",
+		"test:one": "concurrently \"tsc\" \"mocha ./dist/app/v1/authentication/register/register.spec.js --timeout 100000 --no-coverage --exit\"",
 		"seed": "node ./dist/seeders/index.js",
 		"lint": "eslint -c ./.eslintrc.js --ext .ts ./src",
 		"lint:fix": "npm run lint -- --fix",

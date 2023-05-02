@@ -33,10 +33,10 @@ export class VerifyUser extends CoreMiddleware {
 			return this.response.failed(res, 'data', reqParameters);
 		}
 
-		const data = req.body;
+		const data: any = req.body;
 
 		const whereData = {
-			phone: this.helper.cleanData(data.phoneNumber),
+			phone: this.helper.cleanData(data.phoneNumber).toString(),
 			verificationKey: data.verificationKey,
 			active: true,
 			// verified: false,
@@ -46,7 +46,7 @@ export class VerifyUser extends CoreMiddleware {
 			.update(req.models.users, whereData, { verified: true, verificationKey: '' })
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'verify', '');
+					return Promise.reject('invalid phone');
 				}
 
 				return this.response.success(res, 'verify', user._id);
@@ -72,7 +72,7 @@ export class VerifyUser extends CoreMiddleware {
 		}
 
 		const whereData = {
-			phone: this.helper.cleanData(req.body.phoneNumber),
+			phone: this.helper.cleanData(req.body.phoneNumber).toString(),
 			active: true,
 			// verified: false,
 		};
@@ -82,10 +82,10 @@ export class VerifyUser extends CoreMiddleware {
 			.findOne(whereData)
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'verify', '');
+					return Promise.reject('invalid phone');
 				}
 
-				// NOTE: generate OTP here
+				// NOTE: generate OTP
 				verificationKeyOtp = this.helper.encode(`${this.helper.generateRandomString(50)}${new Date().getTime()}`);
 
 				return this.query.update(
@@ -98,7 +98,7 @@ export class VerifyUser extends CoreMiddleware {
 			})
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'verify', '');
+					return Promise.reject('invalid phone');
 				}
 
 				return this.response.success(res, 'verify', verificationKeyOtp);
