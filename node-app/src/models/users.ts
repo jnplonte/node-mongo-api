@@ -1,3 +1,5 @@
+import { ROLE_ID, LANGUAGE_ID, COUNTRY_ID, CITY_ID } from './constants';
+
 export interface UsersAttributes {
 	_id?: string;
 
@@ -19,7 +21,30 @@ export interface UsersAttributes {
 	postalName?: string;
 	postalId?: number;
 
-	socialMedia?: object;
+	socialMedia?: {
+		facebook?: string;
+		instagram?: string;
+		tiktok?: string;
+		twitter?: string;
+		website?: string;
+	};
+
+	// NOTE: if role is SHOPUSER baseRate, isCommissionBased, commissionPercentage are mandatory
+	// NOTE: if role is SHOPEMPLOYEE baseRate, isCommissionBased, serviceCommissionPercentage are mandatory
+	employeeData?: {
+		workingDays?: number[]; // [1,2,3,4,5,6,7]
+		startTime?: number;
+		endTime?: number;
+
+		rating?: number;
+
+		baseRate: number;
+		isCommissionBased: boolean;
+		commissionPercentage: number;
+		serviceCommissionPercentage: number;
+		productCommissionPercentage: number;
+	};
+
 	additionalData?: object;
 
 	active?: boolean;
@@ -33,7 +58,7 @@ export interface UsersAttributes {
 	updatedAt?: Date;
 }
 
-export default function userModel(mongoose) {
+export default function usersModel(mongoose) {
 	const userSchema = mongoose.Schema(
 		{
 			firstName: {
@@ -76,22 +101,22 @@ export default function userModel(mongoose) {
 
 			roleId: {
 				type: String,
-				enum: ['ADMIN', 'USER', 'CUSTOMERADMIN', 'CUSTOMERUSER'],
+				enum: ROLE_ID,
 				default: 'USER',
 			},
 			languageId: {
 				type: String,
-				enum: ['ENGLISH', 'TAGALOG'],
+				enum: LANGUAGE_ID,
 				default: 'ENGLISH',
 			},
 			countryId: {
 				type: String,
-				enum: ['NONE', 'PHILIPPINES'],
+				enum: COUNTRY_ID,
 				default: 'NONE',
 			},
 			cityId: {
 				type: String,
-				enum: ['NONE', 'QUEZONCITY', 'MANDALUYONGCITY', 'PASIGCITY'],
+				enum: CITY_ID,
 				default: 'NONE',
 			},
 			postalName: {
@@ -102,7 +127,66 @@ export default function userModel(mongoose) {
 			},
 
 			socialMedia: {
-				type: Object,
+				facebook: {
+					type: String,
+					default: '',
+				},
+				instagram: {
+					type: String,
+					default: '',
+				},
+				tiktok: {
+					type: String,
+					default: '',
+				},
+				twitter: {
+					type: String,
+					default: '',
+				},
+				website: {
+					type: String,
+					default: '',
+				},
+			},
+			employeeData: {
+				workingDays: {
+					type: Array,
+					default: [],
+				},
+				startTime: {
+					type: Number,
+					default: 0,
+				},
+				endTime: {
+					type: Number,
+					default: 0,
+				},
+
+				rating: {
+					type: Number,
+					default: 0,
+				},
+
+				baseRate: {
+					type: Number,
+					default: 0,
+				},
+				isCommissionBased: {
+					type: Boolean,
+					default: false,
+				},
+				commissionPercentage: {
+					type: Number,
+					default: 0,
+				},
+				serviceCommissionPercentage: {
+					type: Number,
+					default: 0,
+				},
+				productCommissionPercentage: {
+					type: Number,
+					default: 0,
+				},
 			},
 			additionalData: {
 				type: Object,

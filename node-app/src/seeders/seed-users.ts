@@ -30,7 +30,7 @@ export default function userSeed() {
 				password: '409b79d8bbb3c92aa66198d81af8e4bf5e7338767e8b9904438d68088a265d9b',
 				salt: 'testsalt',
 
-				roleId: 'CUSTOMERADMIN',
+				roleId: 'SHOPADMIN',
 				languageId: 'ENGLISH',
 				countryId: 'PHILIPPINES',
 				cityId: 'QUEZONCITY',
@@ -49,7 +49,7 @@ export default function userSeed() {
 				password: '409b79d8bbb3c92aa66198d81af8e4bf5e7338767e8b9904438d68088a265d9b',
 				salt: 'testsalt',
 
-				roleId: 'CUSTOMERADMIN',
+				roleId: 'SHOPADMIN',
 				languageId: 'ENGLISH',
 				countryId: 'PHILIPPINES',
 				cityId: 'QUEZONCITY',
@@ -68,7 +68,26 @@ export default function userSeed() {
 				password: '409b79d8bbb3c92aa66198d81af8e4bf5e7338767e8b9904438d68088a265d9b',
 				salt: 'testsalt',
 
-				roleId: 'CUSTOMERUSER',
+				roleId: 'SHOPUSER',
+				languageId: 'ENGLISH',
+				countryId: 'PHILIPPINES',
+				cityId: 'QUEZONCITY',
+				postalName: 'talipapa',
+				postalId: 1116,
+
+				active: true,
+				verified: true,
+			},
+			{
+				_id: '646b8bb0d0648a25b8da31a5',
+				firstName: 'customer 2',
+				lastName: 'employee',
+				phone: '639444444444',
+				email: '',
+				password: '409b79d8bbb3c92aa66198d81af8e4bf5e7338767e8b9904438d68088a265d9b',
+				salt: 'testsalt',
+
+				roleId: 'SHOPEMPLOYEE',
 				languageId: 'ENGLISH',
 				countryId: 'PHILIPPINES',
 				cityId: 'QUEZONCITY',

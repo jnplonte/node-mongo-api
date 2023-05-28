@@ -8,7 +8,7 @@ describe('login component', () => {
 	let application: any;
 
 	before((done) => {
-		application = new LogIn('sandbox', null, null);
+		application = new LogIn('sandbox', null, null, null);
 
 		done();
 	});

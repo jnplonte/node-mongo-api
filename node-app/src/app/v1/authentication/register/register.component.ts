@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import { CoreMiddleware } from '../../../middlewares/core/core.middleware';
 
-import { UsersAttributes } from './../../../../models/users';
-
 export class Register extends CoreMiddleware {
 	constructor(app, private response, private helper, private query) {
 		super(app);

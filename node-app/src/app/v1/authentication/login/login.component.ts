@@ -25,7 +25,7 @@ export class LogIn extends CoreMiddleware {
 	 *
 	 * @apiBody {String} phoneNumber phone number
 	 * @apiBody {String} password MD5 hash password
-	 * @apiQuery {String} roleId role id <br/>Ex. ?roleId=ADMIN,USER
+	 * @apiQuery {String} roleId role id <br/>Ex. ?roleId=ADMIN,SHOPADMIN
 	 */
 	login(req: Request, res: Response): void {
 		const reqParameters: string[] = ['phoneNumber', 'password'];

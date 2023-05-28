@@ -9,11 +9,9 @@ declare global {
 	namespace Express {
 		interface Request {
 			authentication: {
-				id?: string;
-				username?: string;
-				languageId?: number;
-				countryId?: number;
-				permissionLevel?: number;
+				id: string;
+				phone?: string;
+				roleId?: number;
 			};
 			models?: any;
 		}
