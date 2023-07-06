@@ -5,9 +5,12 @@ export interface UsersAttributes {
 
 	firstName?: string;
 	lastName?: string;
-	birthDate?: string;
 	phone?: string;
+
+	birthDate?: string;
+	address?: string;
 	email?: string;
+
 	password?: string;
 	salt?: string;
 	forgotPasswordKey?: string;
@@ -27,23 +30,25 @@ export interface UsersAttributes {
 		tiktok?: string;
 		twitter?: string;
 		website?: string;
-	};
+	} | null;
 
 	// NOTE: if role is SHOPUSER baseRate, isCommissionBased, commissionPercentage are mandatory
 	// NOTE: if role is SHOPEMPLOYEE baseRate, isCommissionBased, serviceCommissionPercentage are mandatory
 	employeeData?: {
+		shopId?: string;
+
 		workingDays?: number[]; // [1,2,3,4,5,6,7]
 		startTime?: number;
 		endTime?: number;
 
 		rating?: number;
 
-		baseRate: number;
-		isCommissionBased: boolean;
-		commissionPercentage: number;
-		serviceCommissionPercentage: number;
-		productCommissionPercentage: number;
-	};
+		baseRate?: number;
+		isCommissionBased?: boolean;
+		commissionPercentage?: number;
+		serviceCommissionPercentage?: number;
+		productCommissionPercentage?: number;
+	} | null;
 
 	additionalData?: object;
 
@@ -69,12 +74,16 @@ export default function usersModel(mongoose) {
 				type: String,
 				required: true,
 			},
-			birthDate: {
-				type: String,
-			},
 			phone: {
 				type: String,
 				required: true,
+			},
+
+			birthDate: {
+				type: String,
+			},
+			address: {
+				type: String,
 			},
 			email: {
 				type: String,
@@ -149,6 +158,10 @@ export default function usersModel(mongoose) {
 				},
 			},
 			employeeData: {
+				shopId: {
+					type: String,
+				},
+
 				workingDays: {
 					type: Array,
 					default: [],
