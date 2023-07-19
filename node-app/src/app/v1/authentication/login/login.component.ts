@@ -52,7 +52,7 @@ export class LogIn extends CoreMiddleware {
 			.getOne(req.models.users, whereData)
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
-					return this.response.failed(res, 'login', '');
+					return Promise.reject('invalid phone');
 				}
 
 				loginInfo = user;
@@ -64,7 +64,7 @@ export class LogIn extends CoreMiddleware {
 			.then((user: UsersAttributes) => {
 				if (!user || this.helper.isEmptyObject(user)) {
 					return this.updateLoginAttempt(req.models.users, loginInfo._id, loginInfo.loginAttempt).then(() =>
-						this.response.failed(res, 'login', '')
+						Promise.reject('invalid password')
 					);
 				}
 

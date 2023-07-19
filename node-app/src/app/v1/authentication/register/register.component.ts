@@ -69,7 +69,6 @@ export class Register extends CoreMiddleware {
 			return this.query
 				.post(req.models.users, this.helper.cleanData(data))
 				.then((user: any) => {
-					console.log(user.name);
 					if (!user || this.helper.isEmptyObject(user)) {
 						return Promise.reject('register failed');
 					}
